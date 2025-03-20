@@ -3,12 +3,10 @@
 	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
 	<modelVersion>4.0.0</modelVersion>
 	<parent>
-		<groupId>org.springframework.boot</groupId>
-		<artifactId>spring-boot-starter-parent</artifactId>
-		<version>3.4.3</version>
-		<relativePath/> <!-- lookup parent from repository -->
+		<groupId>com.springbank</groupId>
+		<artifactId>user-management</artifactId>
+		<version>1.0.0</version>
 	</parent>
-	<groupId>com.springbank</groupId>
 	<artifactId>user.query.api</artifactId>
 	<version>1.0.0</version>
 	<name>user.query.api</name>
@@ -33,7 +31,7 @@
 		<dependency>
 			<groupId>org.axonframework</groupId>
 			<artifactId>axon-spring-boot-starter</artifactId>
-			<version>4.11.1</version>
+<!--			<version>4.11.1</version>-->
 		</dependency>
 		<dependency>
 			<groupId>org.springframework.boot</groupId>

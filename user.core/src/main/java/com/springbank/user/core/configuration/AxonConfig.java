@@ -1,16 +1,20 @@
 package com.springbank.user.core.configuration;
 
-import com.mongodb.MongoClientSettings;
+
 import com.mongodb.ServerAddress;
 import com.mongodb.client.MongoClient;
-import com.mongodb.client.MongoClientFactory;
-import com.mongodb.client.MongoClients;
+
+import org.axonframework.eventhandling.tokenstore.TokenStore;
+import org.axonframework.extensions.mongo.DefaultMongoTemplate;
+import org.axonframework.extensions.mongo.MongoTemplate;
+import org.axonframework.extensions.mongo.eventsourcing.eventstore.MongoFactory;
+import org.axonframework.extensions.mongo.eventsourcing.eventstore.MongoSettingsFactory;
+import org.axonframework.extensions.mongo.eventsourcing.tokenstore.MongoTokenStore;
+import org.axonframework.serialization.Serializer;
+import org.axonframework.serialization.json.JacksonSerializer;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.data.mongodb.core.MongoClientFactoryBean;
-import org.springframework.data.mongodb.core.MongoClientSettingsFactoryBean;
-import org.springframework.data.mongodb.core.MongoTemplate;
 
 import java.util.Collections;
 
@@ -26,28 +30,34 @@ public class AxonConfig {
     @Value("${spring.data.mongodb.database:user}")
     private String mongoDatabase;
 
-    /*
-     * Factory bean that creates the com.mongodb.client.MongoClient instance
-     */
+
     @Bean
-    public MongoClientFactoryBean mongo() {
-        MongoClientFactoryBean factoryBean = new MongoClientFactoryBean();
+    public MongoClient mongo() {
+        var mongoFactory = new MongoFactory();
+        var mongoSettingsFactory = new MongoSettingsFactory();
+        mongoSettingsFactory.setMongoAddresses(Collections.singletonList(new ServerAddress(mongoHost, mongoPort)));
+        mongoFactory.setMongoClientSettings(mongoSettingsFactory.createMongoClientSettings());
 
-
-        // Step 1: Customize MongoClientSettings
-        MongoClientSettings settings = MongoClientSettings.builder()
-                .applyToClusterSettings(builder ->
-                    builder.hosts(Collections.singletonList(new ServerAddress(mongoHost, mongoPort))))
-                .build();
-
-        factoryBean.setMongoClientSettings(settings);
-
-        return factoryBean;
+        return mongoFactory.createMongo();
     }
+
 
     // Step 2: Create a MongoTemplate using the MongoClient
     @Bean
-    public MongoTemplate mongoTemplate(MongoClient mongoClient) {
-        return new MongoTemplate(mongoClient, mongoDatabase); // Specify the database name
+    public MongoTemplate axonMongoTemplate() {
+        return DefaultMongoTemplate.builder()
+            .mongoDatabase(mongo(), mongoDatabase)
+            .build();
     }
+
+    @Bean
+    public Serializer serializer() {
+        return JacksonSerializer.defaultSerializer();
+    }
+
+    @Bean
+    public TokenStore tokenStore(Serializer serializer) {
+        return MongoTokenStore.builder().mongoTemplate(axonMongoTemplate()).serializer(serializer).build();
+    }
+
 }
