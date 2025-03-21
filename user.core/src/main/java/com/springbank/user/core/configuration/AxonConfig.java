@@ -4,10 +4,10 @@ package com.springbank.user.core.configuration;
 import com.mongodb.ServerAddress;
 import com.mongodb.client.MongoClient;
 
+import com.thoughtworks.xstream.XStream;
 import org.axonframework.eventhandling.tokenstore.TokenStore;
 import org.axonframework.eventsourcing.eventstore.EmbeddedEventStore;
 import org.axonframework.eventsourcing.eventstore.EventStorageEngine;
-import org.axonframework.eventsourcing.eventstore.EventStore;
 import org.axonframework.extensions.mongo.DefaultMongoTemplate;
 import org.axonframework.extensions.mongo.MongoTemplate;
 import org.axonframework.extensions.mongo.eventsourcing.eventstore.MongoEventStorageEngine;
@@ -15,16 +15,17 @@ import org.axonframework.extensions.mongo.eventsourcing.eventstore.MongoFactory;
 import org.axonframework.extensions.mongo.eventsourcing.eventstore.MongoSettingsFactory;
 import org.axonframework.extensions.mongo.eventsourcing.tokenstore.MongoTokenStore;
 import org.axonframework.serialization.Serializer;
-import org.axonframework.serialization.json.JacksonSerializer;
-import org.axonframework.spring.config.AxonConfiguration;
-import org.axonframework.springboot.autoconfig.AxonAutoConfiguration;
+import org.axonframework.serialization.xml.XStreamSerializer;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Import;
 
 import java.util.Collections;
 
 @Configuration
+@Import( { SerializerConfig.class })
 public class AxonConfig {
 
     @Value("${spring.data.mongodb.host:127.0.0.1}")
@@ -57,21 +58,18 @@ public class AxonConfig {
     }
 
     @Bean
-    public Serializer serializer() {
-        return JacksonSerializer.defaultSerializer();
-    }
-
-    @Bean
-    public TokenStore tokenStore(Serializer serializer) {
+    public TokenStore tokenStore(@Qualifier("messageSerializer") Serializer serializer) {
         return MongoTokenStore.builder().mongoTemplate(axonMongoTemplate()).serializer(serializer).build();
     }
 
     @Bean
-    public EventStorageEngine storageEngine(MongoClient client) {
+    public EventStorageEngine storageEngine(MongoClient client, XStream xStream) {
         return MongoEventStorageEngine.builder()
                 .mongoTemplate(DefaultMongoTemplate.builder()
                         .mongoDatabase(client)
                         .build())
+                .snapshotSerializer(XStreamSerializer.builder().xStream(xStream).build())
+                .eventSerializer(XStreamSerializer.builder().xStream(xStream).build())
                 .build();
     }
 
